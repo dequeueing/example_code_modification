@@ -58,6 +58,7 @@ pub mod fs;
 pub mod net;
 pub mod prelude;
 mod process;
+mod proxy;
 mod sched;
 pub mod syscall;
 pub mod thread;

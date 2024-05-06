@@ -98,6 +98,7 @@ use crate::{
     },
 };
 
+// mod syscall_num;
 mod accept;
 mod access;
 mod alarm;
@@ -121,6 +122,7 @@ mod exit_group;
 mod fcntl;
 mod fork;
 mod fsync;
+pub mod fstatat;
 mod futex;
 mod getcwd;
 mod getdents64;
@@ -208,7 +210,7 @@ mod writev;
 macro_rules! define_syscall_nums {
     ( $( $name: ident = $num: expr ),+ ) => {
         $(
-            const $name: u64  = $num;
+            pub const $name: u64  = $num;
         )*
     }
 }
@@ -254,6 +256,8 @@ define_syscall_nums!(
     SYS_RT_SIGRETURN = 15,
     SYS_IOCTL = 16,
     SYS_PREAD64 = 17,
+    SYS_PWRITE64 = 18,
+    SYS_READV = 19,
     SYS_WRITEV = 20,
     SYS_ACCESS = 21,
     SYS_PIPE = 22,
@@ -290,6 +294,7 @@ define_syscall_nums!(
     SYS_FSYNC = 74,
     SYS_TRUNCATE = 76,
     SYS_FTRUNCATE = 77,
+    SYS_GETDENTS = 78,
     SYS_GETCWD = 79,
     SYS_CHDIR = 80,
     SYS_FCHDIR = 81,
@@ -360,12 +365,14 @@ define_syscall_nums!(
     SYS_SYMLINKAT = 266,
     SYS_READLINKAT = 267,
     SYS_FCHMODAT = 268,
+    SYS_FACCESSAT = 269,
     SYS_SET_ROBUST_LIST = 273,
     SYS_UTIMENSAT = 280,
     SYS_EPOLL_PWAIT = 281,
     SYS_EPOLL_CREATE1 = 291,
     SYS_PIPE2 = 293,
     SYS_PRLIMIT64 = 302,
+    SYS_RENAMEAT2 = 316,
     SYS_GETRANDOM = 318,
     SYS_EXECVEAT = 322
 );
