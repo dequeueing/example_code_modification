@@ -1,14 +1,14 @@
 use alloc::vec::Vec;
+// use super::sm::STATE_MACHINE;
+use crate::process::current;
+use crate::proxy::expand_args;
+use crate::proxy::mc::MC;
+use crate::syscall::SyscallReturn;
+use crate::prelude::*;
+// use crate::error::SyscallRet;
 
-use super::sm::STATE_MACHINE;
-use crate::{
-    processor::current_process,
-    proxy::{expand_args, mc::MC},
-    syscall,
-    utils::error::SyscallRet,
-};
 
-pub fn proxy_sys_socket(domain: u32, socket_type: u32, protocol: u32) -> SyscallRet {
+pub fn proxy_sys_socket(domain: u32, socket_type: u32, protocol: u32) -> Result<SyscallReturn> {
     #[cfg(feature = "verify_syscall")]
     assert!(STATE_MACHINE
         .lock()
@@ -17,8 +17,8 @@ pub fn proxy_sys_socket(domain: u32, socket_type: u32, protocol: u32) -> Syscall
     let mc = MC::alloc();
     let r = mc
         .proxy(
-            current_process().pid(),
-            syscall::SYSCALL_SOCKET,
+            current().pid().try_into().unwrap(),
+            41,
             expand_args!(domain, socket_type, protocol),
         )
         .free();
@@ -29,15 +29,15 @@ pub fn proxy_sys_socket(domain: u32, socket_type: u32, protocol: u32) -> Syscall
     r
 }
 
-pub fn proxy_sys_bind(sockfd: u32, addr: &[u8]) -> SyscallRet {
+pub fn proxy_sys_bind(sockfd: u32, addr: &[u8]) -> Result<SyscallReturn> {
     #[cfg(feature = "verify_syscall")]
     assert!(STATE_MACHINE.lock().pre_verify_bind(sockfd, addr));
     let mc = MC::alloc();
     mc.set_payload(0, addr.as_ptr(), addr.len());
     let r = mc
         .proxy(
-            current_process().pid(),
-            syscall::SYSCALL_BIND,
+            current().pid().try_into().unwrap(),
+            49,
             expand_args!(sockfd, addr.len()),
         )
         .free();
@@ -46,14 +46,14 @@ pub fn proxy_sys_bind(sockfd: u32, addr: &[u8]) -> SyscallRet {
     r
 }
 
-pub fn proxy_sys_listen(sockfd: u32, backlog: u32) -> SyscallRet {
+pub fn proxy_sys_listen(sockfd: u32, backlog: u32) -> Result<SyscallReturn> {
     #[cfg(feature = "verify_syscall")]
     assert!(STATE_MACHINE.lock().pre_verify_listen(sockfd));
     let mc = MC::alloc();
     let r = mc
         .proxy(
-            current_process().pid(),
-            syscall::SYSCALL_LISTEN,
+            current().pid().try_into().unwrap(),
+            50,
             expand_args!(sockfd, backlog),
         )
         .free();
@@ -62,14 +62,14 @@ pub fn proxy_sys_listen(sockfd: u32, backlog: u32) -> SyscallRet {
     r
 }
 
-pub fn proxy_sys_accept(sockfd: u32, addr: &mut Vec<u8>) -> SyscallRet {
+pub fn proxy_sys_accept(sockfd: u32, addr: &mut Vec<u8>) -> Result<SyscallReturn> {
     addr.clear();
     #[cfg(feature = "verify_syscall")]
     assert!(STATE_MACHINE.lock().pre_verify_accept(sockfd, addr));
     let mc = MC::alloc();
     mc.proxy(
-        current_process().pid(),
-        syscall::SYSCALL_ACCEPT,
+        current().pid().try_into().unwrap(),
+        43,
         expand_args!(sockfd, addr.as_ptr() as usize, addr.len()),
     );
     mc.get_payload(0, addr.as_ptr(), addr.len());
@@ -79,7 +79,7 @@ pub fn proxy_sys_accept(sockfd: u32, addr: &mut Vec<u8>) -> SyscallRet {
     r
 }
 
-pub fn proxy_sys_connect(sockfd: u32, addr: &[u8]) -> SyscallRet {
+pub fn proxy_sys_connect(sockfd: u32, addr: &[u8]) -> Result<SyscallReturn> {
     #[cfg(feature = "verify_syscall")]
     assert!(STATE_MACHINE.lock().pre_verify_connect(sockfd, addr));
 
@@ -87,8 +87,8 @@ pub fn proxy_sys_connect(sockfd: u32, addr: &[u8]) -> SyscallRet {
     mc.set_payload(0, addr.as_ptr(), addr.len());
     let r = mc
         .proxy(
-            current_process().pid(),
-            syscall::SYSCALL_CONNECT,
+            current().pid().try_into().unwrap(),
+            42,//syscall::SYSCALL_CONNECT,
             expand_args!(sockfd, addr.len()),
         )
         .free();
@@ -97,14 +97,14 @@ pub fn proxy_sys_connect(sockfd: u32, addr: &[u8]) -> SyscallRet {
     r
 }
 
-pub fn proxy_getsockname(sockfd: u32, addr: &mut Vec<u8>) -> SyscallRet {
+pub fn proxy_getsockname(sockfd: u32, addr: &mut Vec<u8>) -> Result<SyscallReturn> {
     addr.clear();
     #[cfg(feature = "verify_syscall")]
     assert!(STATE_MACHINE.lock().pre_verify_getsockname(sockfd, addr));
     let mc = MC::alloc();
     mc.proxy(
-        current_process().pid(),
-        syscall::SYSCALL_GETSOCKNAME,
+        current().pid().try_into().unwrap(),
+        51,//syscall::SYSCALL_GETSOCKNAME,
         expand_args!(sockfd, addr.as_ptr(), addr.len()),
     );
 
@@ -117,15 +117,15 @@ pub fn proxy_getsockname(sockfd: u32, addr: &mut Vec<u8>) -> SyscallRet {
     r
 }
 
-pub fn proxy_getpeername(sockfd: u32, addr: &mut Vec<u8>) -> SyscallRet {
+pub fn proxy_getpeername(sockfd: u32, addr: &mut Vec<u8>) -> Result<SyscallReturn> {
     addr.clear();
     #[cfg(feature = "verify_syscall")]
     assert!(STATE_MACHINE.lock().pre_verify_getpeername(sockfd, addr));
 
     let mc = MC::alloc();
     mc.proxy(
-        current_process().pid(),
-        syscall::SYSCALL_GETPEERNAME,
+        current().pid().try_into().unwrap(),
+        52,//syscall::SYSCALL_GETPEERNAME,
         expand_args!(sockfd, addr.as_ptr(), addr.len()),
     );
     mc.get_payload(0, addr.as_ptr(), addr.len());
@@ -138,7 +138,7 @@ pub fn proxy_getpeername(sockfd: u32, addr: &mut Vec<u8>) -> SyscallRet {
 }
 
 // FIXME
-pub fn proxy_sys_sendto(sockfd: u32, buf: &[u8], flags: u32, addr: &[u8]) -> SyscallRet {
+pub fn proxy_sys_sendto(sockfd: u32, buf: &[u8], flags: u32, addr: &[u8]) -> Result<SyscallReturn> {
     #[cfg(feature = "verify_syscall")]
     assert!(STATE_MACHINE.lock().pre_verify_sendto(sockfd, buf.len()));
     let mc = MC::alloc();
@@ -147,8 +147,8 @@ pub fn proxy_sys_sendto(sockfd: u32, buf: &[u8], flags: u32, addr: &[u8]) -> Sys
 
     let r = mc
         .proxy(
-            current_process().pid(),
-            syscall::SYSCALL_SENDTO,
+            current().pid().try_into().unwrap(),
+            44,//syscall::SYSCALL_SENDTO,
             expand_args!(sockfd, buf.len(), flags, addr.len()),
         )
         .free();
@@ -164,15 +164,15 @@ pub fn proxy_sys_recvfrom(
     buf: &mut [u8],
     flags: u32,
     addr: &mut Vec<u8>,
-) -> SyscallRet {
+) -> Result<SyscallReturn> {
     addr.clear();
     #[cfg(feature = "verify_syscall")]
     assert!(STATE_MACHINE.lock().pre_verify_recvfrom(sockfd, buf.len()));
     let mc = MC::alloc();
     mc.set_payload(1, addr.as_ptr(), addr.len());
     mc.proxy(
-        current_process().pid(),
-        syscall::SYSCALL_RECVFROM,
+        current().pid().try_into().unwrap(),
+        45,//syscall::SYSCALL_RECVFROM,
         expand_args!(
             sockfd,
             buf.as_ptr(),
@@ -197,12 +197,12 @@ pub fn proxy_sys_getsockopt(
     level: u32,
     optname: u32,
     optval: &mut Vec<u8>,
-) -> SyscallRet {
+) -> Result<SyscallReturn> {
     optval.clear();
     let mc = MC::alloc();
     mc.proxy(
-        current_process().pid(),
-        syscall::SYSCALL_GETSOCKOPT,
+        current().pid().try_into().unwrap(),
+        55,//syscall::SYSCALL_GETSOCKOPT,
         expand_args!(sockfd, level, optname, optval.as_ptr(), optval.len()),
     );
     mc.get_payload(0, optval.as_ptr(), optval.len());
@@ -210,15 +210,15 @@ pub fn proxy_sys_getsockopt(
     r
 }
 
-pub fn proxy_sys_setsockopt(sockfd: u32, level: u32, optname: u32, optval: &[u8]) -> SyscallRet {
+pub fn proxy_sys_setsockopt(sockfd: u32, level: u32, optname: u32, optval: &[u8]) -> Result<SyscallReturn> {
     #[cfg(feature = "verify_syscall")]
     assert!(STATE_MACHINE.lock().pre_verify_setsockopt(sockfd));
     let mc = MC::alloc();
     mc.set_payload(0, optval.as_ptr(), optval.len());
     let r = mc
         .proxy(
-            current_process().pid(),
-            syscall::SYSCALL_SETSOCKOPT,
+            current().pid().try_into().unwrap(),
+            54,//syscall::SYSCALL_SETSOCKOPT,
             expand_args!(sockfd, level, optname, optval.len()),
         )
         .free();
@@ -227,14 +227,14 @@ pub fn proxy_sys_setsockopt(sockfd: u32, level: u32, optname: u32, optval: &[u8]
     r
 }
 
-pub fn proxy_sys_shutdown(sockfd: u32, how: u32) -> SyscallRet {
+pub fn proxy_sys_shutdown(sockfd: u32, how: u32) -> Result<SyscallReturn> {
     #[cfg(feature = "verify_syscall")]
     assert!(STATE_MACHINE.lock().pre_verify_shutdown(sockfd, how));
     let mc = MC::alloc();
     let r = mc
         .proxy(
-            current_process().pid(),
-            syscall::SYSCALL_SHUTDOWN,
+            current().pid().try_into().unwrap(),
+            48,//syscall::SYSCALL_SHUTDOWN,
             expand_args!(sockfd, how),
         )
         .free();
@@ -248,15 +248,15 @@ pub fn proxy_sys_socketpair(
     socket_type: u32,
     protocol: u32,
     sv: &mut [usize],
-) -> SyscallRet {
+) -> Result<SyscallReturn> {
     #[cfg(feature = "verify_syscall")]
     assert!(STATE_MACHINE
         .lock()
         .pre_verify_socketpair(domain, socket_type, protocol, sv));
     let mc = MC::alloc();
     mc.proxy(
-        current_process().pid(),
-        syscall::SYSCALL_SOCKETPAIR,
+        current().pid().try_into().unwrap(),
+        53,//syscall::SYSCALL_SOCKETPAIR,
         expand_args!(domain, socket_type, protocol, sv.as_ptr() as usize),
     );
     mc.get_payload(0, sv.as_ptr(), 2 * core::mem::size_of::<usize>());

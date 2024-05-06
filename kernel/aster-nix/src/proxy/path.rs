@@ -1,3 +1,5 @@
+extern crate bitflags;
+use bitflags::bitflags;
 use alloc::{
     collections::BTreeMap,
     string::{String, ToString},

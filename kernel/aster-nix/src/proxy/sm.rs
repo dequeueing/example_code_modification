@@ -1,23 +1,23 @@
 //！ state machine to verify proxy syscall
 
+use core::ffi::CStr;
+extern crate bitflags;
+use bitflags::bitflags;
 use alloc::{
     collections::BTreeMap,
     string::{String, ToString},
     vec::Vec,
 };
-use core::ffi::CStr;
-
+use spin::Once;
 use super::{
     net_std::{parse_ipv4_address, Ipv4Addr, SocketAddr, SocketAddrV4},
     path::{self, remove, HostFileType, PathTree, Permission},
     socket::{SocketInfo, SocketType, Socketstate, AF_INET},
 };
 use crate::{
-    fs::{ffi::STAT, file, OpenFlags},
-    sync::mutex::SpinNoIrqLock,
-    utils::error::SyscallRet,
+    error::SyscallRet,
 };
-
+use aster_frame::{console::print, sync::Mutex};
 pub struct SyscallStateMachine {
     pathtree: PathTree,                    // file system tree
     hostfd: BTreeMap<usize, HostFileType>, // record fds that host used
@@ -72,7 +72,7 @@ impl FileOpenInfo {
     }
 }
 
-type Mutex<T> = SpinNoIrqLock<T>;
+//type Mutex<T> = SpinNoIrqLock<T>;
 
 /// Global shared memory manager
 pub static STATE_MACHINE: Mutex<SyscallStateMachine> = Mutex::new(SyscallStateMachine::new());
@@ -778,7 +778,7 @@ impl SyscallStateMachine {
         if testpath.contains(&path) {
             return true;
         }
-        println!("path: {}", path);
+        // print("path: {}", path);
         if self.pathtree.search(path) == false {
             log::error!("file not exist");
             return false;
@@ -1512,4 +1512,36 @@ pub fn convert_mode(mode: usize) -> Permission {
         p.insert(Permission::R_OK);
     }
     return p;
+}
+bitflags! {
+    /// Open file flags
+    pub struct OpenFlags: u32 {
+        const APPEND = 1 << 10;
+        const ASYNC = 1 << 13;
+        const DIRECT = 1 << 14;
+        const DSYNC = 1 << 12;
+        const EXCL = 1 << 7;
+        const NOATIME = 1 << 18;
+        const NOCTTY = 1 << 8;
+        const NOFOLLOW = 1 << 17;
+        const PATH = 1 << 21;
+        /// TODO: need to find 1 << 15
+        const TEMP = 1 << 15;
+        /// Read only
+        const RDONLY = 0;
+        /// Write only
+        const WRONLY = 1 << 0;
+        /// Read & Write
+        const RDWR = 1 << 1;
+        /// Allow create
+        const CREATE = 1 << 6;
+        /// Clear file and return an empty one
+        const TRUNC = 1 << 9;
+        /// Directory
+        const DIRECTORY = 1 << 16;
+        /// Enable the close-on-exec flag for the new file descriptor
+        const CLOEXEC = 1 << 19;
+        /// When possible, the file is opened in nonblocking mode
+        const NONBLOCK = 1 << 11;
+    }
 }

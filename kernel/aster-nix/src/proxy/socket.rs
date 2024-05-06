@@ -1,5 +1,6 @@
 use super::net_std::{Ipv4Addr, SocketAddr, SocketAddrV4};
-
+extern crate bitflags;
+use bitflags::bitflags;
 pub struct SocketInfo {
     domain: u32,
     socket_type: SocketType,

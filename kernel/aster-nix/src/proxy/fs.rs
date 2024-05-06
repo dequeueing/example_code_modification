@@ -1,4 +1,5 @@
 use alloc::vec::Vec;
+use aster_frame::arch::console::print;
 use core::mem::size_of;
 use core::sync::atomic::Ordering;
 
@@ -8,14 +9,16 @@ use crate::syscall::fstatat::{STAT, TimeSpec};
 // use crate::fs::OpenFlags;
 // use crate::processor::current_process; // fixme: current!().pid()
 
-use crate::proxy::path::convert_dirfd_to_path;// use crate::proxy::sm::STATE_MACHINE;
+use crate::proxy::path::convert_dirfd_to_path;
+use crate::time::timespec_t;
+// use crate::proxy::sm::STATE_MACHINE;
 use crate::{current, syscall};
 use crate::syscall::SyscallReturn;
 use crate::prelude::*;
 // use crate::timer::ffi::TimeSpec;
 // use crate::utils::error::{SyscallErr, Result<SyscallReturn>};
 
-pub fn proxy_sys_openat(dirfd: usize, filename: &str, flag: u32, mode: usize) -> Result<SyscallReturn> {
+pub fn proxy_sys_openat(dirfd: usize, filename: &str, flag: OpenFlags, mode: usize) -> Result<SyscallReturn> {
     //println!("In proxy open");
     let dirent_name = convert_dirfd_to_path(dirfd, filename);
     #[cfg(feature = "verify_syscall")]
@@ -27,8 +30,8 @@ pub fn proxy_sys_openat(dirfd: usize, filename: &str, flag: u32, mode: usize) ->
     //println!("After set data");
     let r = mc
         .proxy(
-            current!().pid(),
-            syscall::SYS_OPEN,
+            current!().pid() as usize,
+            syscall::SYS_OPEN as usize,
             expand_args!(dirfd, flag.bits() as usize, mode),
         )
         .free();
@@ -45,8 +48,8 @@ pub fn proxy_sys_dup(oldfd: usize) -> Result<SyscallReturn> {
     let mc = MC::alloc();
     let r = mc
         .proxy(
-            current!().pid(),
-            syscall::SYS_DUP,
+            current!().pid() as usize,
+            syscall::SYS_DUP as usize,
             expand_args!(oldfd),
         )
         .free();
@@ -63,8 +66,8 @@ pub fn proxy_sys_unlinkat(dirfd: usize, pathname: &str, flags: u32) -> Result<Sy
     mc.set_string(0, pathname);
     let r = mc
         .proxy(
-            current!().pid(),
-            syscall::SYS_UNLINK,
+            current!().pid() as usize,
+            syscall::SYS_UNLINK as usize,
             expand_args!(dirfd, flags as usize),
         )
         .free();
@@ -81,8 +84,8 @@ pub fn proxy_sys_mkdirat(dirfd: usize, pathname: &str, mode: usize) -> Result<Sy
     mc.set_string(0, pathname);
     let r = mc
         .proxy(
-            current!().pid(),
-            syscall::SYS_MKDIR,
+            current!().pid() as usize,
+            syscall::SYS_MKDIR as usize,
             expand_args!(dirfd, mode),
         )
         .free();
@@ -92,7 +95,7 @@ pub fn proxy_sys_mkdirat(dirfd: usize, pathname: &str, mode: usize) -> Result<Sy
         .lock()
         .post_verify_mkdir(dirent_name.as_str(), mode, r));
 
-    return Ok(0);
+    return Ok(SyscallReturn::Return(0));
     // match r {
     //     Ok(_) => {
     //         return r;
@@ -110,8 +113,8 @@ pub fn proxy_sys_close(fd: usize) -> Result<SyscallReturn> {
     assert!(STATE_MACHINE.lock().pre_verify_close(fd) == true);
 
     let r = proxy_syscall(
-        current!().pid(),
-        syscall::SYS_CLOSE,
+        current!().pid() as usize,
+        syscall::SYS_CLOSE as usize,
         expand_args!(fd),
     );
     #[cfg(feature = "verify_syscall")]
@@ -127,8 +130,8 @@ pub fn proxy_sys_write(fd: usize, buf: &[u8]) -> Result<SyscallReturn> {
     mc.set_payload(0, buf.as_ptr(), buf.len());
     let r = mc
         .proxy(
-            current!().pid(),
-            syscall::SYS_WRITE,
+            current!().pid() as usize,
+            syscall::SYS_WRITE as usize,
             expand_args!(fd, buf.len()),
         )
         .free();
@@ -157,8 +160,8 @@ pub fn proxy_sys_pwrite(fd: usize, buf: &[u8], offset: usize) -> Result<SyscallR
     mc.set_payload(0, buf.as_ptr(), buf.len());
     let r = mc
         .proxy(
-            current!().pid(),
-            syscall::SYS_PWRITE64,
+            current!().pid() as usize,
+            syscall::SYS_PWRITE64 as usize,
             expand_args!(fd, buf.len(), offset),
         )
         .free();
@@ -176,8 +179,8 @@ pub fn proxy_sys_read(fd: usize, buf: &mut [u8]) -> Result<SyscallReturn> {
         assert!(STATE_MACHINE.lock().pre_verify_read(fd, len));
 
         let mc = MC::alloc().proxy(
-            current!().pid(),
-            syscall::SYS_READ,
+            current!().pid() as usize,
+            syscall::SYS_READ as usize,
             expand_args!(fd, buf.len()),
         );
 
@@ -190,7 +193,7 @@ pub fn proxy_sys_read(fd: usize, buf: &mut [u8]) -> Result<SyscallReturn> {
     let mut offset: usize = 0;
     let mut completed: usize = 0;
     //let mut ret = Ok(0);
-    let mut cnt: usize = 0;
+    let mut cnt: isize = 0;
     let payload_size = PAYLOAD_SIZE * PAYLOAD_CNT;
 
     while completed != len {
@@ -207,8 +210,8 @@ pub fn proxy_sys_read(fd: usize, buf: &mut [u8]) -> Result<SyscallReturn> {
             };
 
             mc.set_info(
-                current!().pid(),
-                syscall::SYS_READ,
+                current!().pid() as usize,
+                syscall::SYS_READ as usize,
                 expand_args!(fd, size, offset),
             );
             mc.dispatch();
@@ -229,11 +232,21 @@ pub fn proxy_sys_read(fd: usize, buf: &mut [u8]) -> Result<SyscallReturn> {
             );
 
             if let ret = mc.free().unwrap() {
-                cnt += ret;
+                // if let ret = SyscallReturn::Return(r) {
+                //     cnt += r;
+                // }
+                match ret {
+                    SyscallReturn::Return(temp) => {
+                        cnt += temp;
+                    },
+                    SyscallReturn::NoReturn => {
+                        
+                    }
+                }
             }
         }
     }
-    Ok(cnt)
+    Ok(SyscallReturn::Return(cnt))
 }
 
 pub fn proxy_sys_pread(fd: usize, buf: &mut [u8], offset: usize) -> Result<SyscallReturn> {
@@ -242,8 +255,8 @@ pub fn proxy_sys_pread(fd: usize, buf: &mut [u8], offset: usize) -> Result<Sysca
     #[cfg(feature = "verify_syscall")]
     assert!(STATE_MACHINE.lock().pre_verify_pread(fd, len, offset));
     let mc = MC::alloc().proxy(
-        current!().pid(),
-        syscall::SYS_PREAD64,
+        current!().pid() as usize,
+        syscall::SYS_PREAD64 as usize,
         expand_args!(fd, buf.len(), offset),
     );
     mc.get_payload(0, buf.as_ptr(), mc.ret as usize);
@@ -257,8 +270,8 @@ pub fn proxy_sys_getdents(fd: usize, buf: &mut [u8]) -> Result<SyscallReturn> {
     #[cfg(feature = "verify_syscall")]
     assert!(STATE_MACHINE.lock().pre_verify_getdents(fd));
     let mc = MC::alloc().proxy(
-        current!().pid(),
-        syscall::SYS_GETDENTS,
+        current!().pid() as usize,
+        syscall::SYS_GETDENTS as usize,
         expand_args!(fd, buf.len()),
     );
     mc.get_payload(0, buf.as_ptr(), buf.len());
@@ -276,8 +289,8 @@ pub fn proxy_sys_chdir(path: &str) -> Result<SyscallReturn> {
     let mc = MC::alloc();
     mc.set_string(0, path);
     mc.proxy(
-        current!().pid(),
-        syscall::SYS_CHDIR,
+        current!().pid() as usize,
+        syscall::SYS_CHDIR as usize,
         expand_args!(),
     )
     .free()
@@ -301,8 +314,8 @@ pub fn proxy_sys_renameat2(
     mc.set_string(1, newpath);
     let r = mc
         .proxy(
-            current!().pid(),
-            syscall::SYS_RENAMEAT2,
+            current!().pid() as usize,
+            syscall::SYS_RENAMEAT2 as usize,
             expand_args!(olddirfd, newdirfd, flags as usize),
         )
         .free();
@@ -328,8 +341,8 @@ pub fn proxy_sys_fstatat(dirfd: usize, path: &str, buf: &mut STAT, flag: u32) ->
     let mc = MC::alloc();
     mc.set_string(0, path);
     mc.proxy(
-        current!().pid(),
-        syscall::SYS_FSTATAT,
+        current!().pid() as usize,
+        syscall::SYS_FSTATAT as usize,
         expand_args!(dirfd, flag as usize),
     );
     mc.get_payload(1, buf as *mut STAT, size_of::<STAT>());
@@ -345,8 +358,8 @@ pub fn proxy_sys_fstat(fd: usize, buf: &mut STAT) -> Result<SyscallReturn> {
     #[cfg(feature = "verify_syscall")]
     assert!(STATE_MACHINE.lock().pre_verify_fstat(fd));
     let mc = MC::alloc().proxy(
-        current!().pid(),
-        syscall::SYS_FSTAT,
+        current!().pid() as usize,
+        syscall::SYS_FSTAT as usize,
         expand_args!(fd, buf as *mut STAT as usize),
     );
     mc.get_payload(0, buf as *mut STAT, size_of::<STAT>());
@@ -368,8 +381,8 @@ pub fn proxy_sys_faccessat(dirfd: usize, pathname: &str, mode: u32, flags: u32) 
     mc.set_string(0, pathname);
     let r = mc
         .proxy(
-            current!().pid(),
-            syscall::SYS_FACCESSAT,
+            current!().pid() as usize,
+            syscall::SYS_FACCESSAT as usize,
             expand_args!(dirfd, mode as usize, flags as usize),
         )
         .free();
@@ -388,8 +401,8 @@ pub fn proxy_sys_utimensat(
     let mc = MC::alloc();
     mc.set_string(0, pathname);
     mc.proxy(
-        current!().pid(),
-        syscall::SYS_UTIMENSAT,
+        current!().pid() as usize,
+        syscall::SYS_UTIMENSAT as usize,
         expand_args!(dirfd, flags as usize),
     );
     mc.get_payload(0, times as *mut TimeSpec, size_of::<TimeSpec>());
@@ -402,8 +415,8 @@ pub fn proxy_sys_lseek(fd: usize, offset: isize, whence: u8) -> Result<SyscallRe
     #[cfg(feature = "verify_syscall")]
     assert!(STATE_MACHINE.lock().pre_verify_lseek(fd, offset, whence));
     let ret = proxy_syscall(
-        current!().pid(),
-        syscall::SYS_LSEEK,
+        current!().pid() as usize,
+        syscall::SYS_LSEEK as usize,
         expand_args!(fd, offset as usize, whence as usize),
     );
     #[cfg(feature = "verify_syscall")]
@@ -416,8 +429,8 @@ pub fn proxy_sys_lseek(fd: usize, offset: isize, whence: u8) -> Result<SyscallRe
 // FIXME
 pub fn proxy_sys_fcntl(fd: usize, cmd: usize, arg: usize) -> Result<SyscallReturn> {
     proxy_syscall(
-        current!().pid(),
-        syscall::SYS_FCNTL,
+        current!().pid() as usize,
+        syscall::SYS_FCNTL as usize,
         expand_args!(fd, cmd, arg),
     )
 }
@@ -431,8 +444,8 @@ pub fn proxy_sys_readlinkat(dirfd: usize, path_name: &str, buf: &mut [u8]) -> Re
     let mc = MC::alloc();
     mc.set_string(0, path_name);
     mc.proxy(
-        current!().pid(),
-        syscall::SYS_READLINKAT,
+        current!().pid() as usize,
+        syscall::SYS_READLINKAT as usize,
         expand_args!(dirfd, buf.len()),
     );
     mc.get_payload(1, buf.as_mut_ptr(), buf.len());
@@ -448,8 +461,8 @@ pub fn proxy_sys_ftruncate(fd: usize, len: usize) -> Result<SyscallReturn> {
     #[cfg(feature = "verify_syscall")]
     assert!(STATE_MACHINE.lock().pre_verify_ftruncate(fd, len));
     let r = proxy_syscall(
-        current!().pid(),
-        syscall::SYS_FTRUNCATE,
+        current!().pid() as usize,
+        syscall::SYS_FTRUNCATE as usize,
         expand_args!(fd, len),
     );
     #[cfg(feature = "verify_syscall")]
@@ -479,3 +492,36 @@ pub fn proxy_sys_ftruncate(fd: usize, len: usize) -> Result<SyscallReturn> {
 //         0
 //     )
 // }
+
+bitflags! {
+    /// Open file flags
+    pub struct OpenFlags: u32 {
+        const APPEND = 1 << 10;
+        const ASYNC = 1 << 13;
+        const DIRECT = 1 << 14;
+        const DSYNC = 1 << 12;
+        const EXCL = 1 << 7;
+        const NOATIME = 1 << 18;
+        const NOCTTY = 1 << 8;
+        const NOFOLLOW = 1 << 17;
+        const PATH = 1 << 21;
+        /// TODO: need to find 1 << 15
+        const TEMP = 1 << 15;
+        /// Read only
+        const RDONLY = 0;
+        /// Write only
+        const WRONLY = 1 << 0;
+        /// Read & Write
+        const RDWR = 1 << 1;
+        /// Allow create
+        const CREATE = 1 << 6;
+        /// Clear file and return an empty one
+        const TRUNC = 1 << 9;
+        /// Directory
+        const DIRECTORY = 1 << 16;
+        /// Enable the close-on-exec flag for the new file descriptor
+        const CLOEXEC = 1 << 19;
+        /// When possible, the file is opened in nonblocking mode
+        const NONBLOCK = 1 << 11;
+    }
+}

@@ -1,6 +1,7 @@
-use core::{fmt, fmt::Formatter};
-
-use crate::proxy::{sync::Anp, BASE_ADDR};
+use crate::proxy::sync::Anp;
+use crate::proxy::BASE_ADDR;
+use core::fmt;
+use core::fmt::Formatter;
 
 #[derive(Debug)]
 #[repr(C)]
@@ -30,14 +31,15 @@ impl fmt::Display for Terminal {
 }
 
 impl Terminal {
+    // fixme: eliminate unsafe
     pub unsafe fn enqueue(&mut self, mut node: Anp<Node>) {
         let mut tail: Anp<Node> = Anp::null();
         let mut next: usize;
-        node.as_mut().next.raw = 0;
+        node.as_mut().unwrap().next.raw = 0;
 
         'enqueue: loop {
             tail.raw = self.tail.raw + BASE_ADDR;
-            next = tail.as_ref().next.raw;
+            next = tail.as_ref().unwrap().next.raw;
 
             if tail.raw - BASE_ADDR != self.tail.raw {
                 continue;
