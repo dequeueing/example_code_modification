@@ -45,6 +45,8 @@ QEMU_ARGS="\
     -device virtio-net-pci,netdev=net01,disable-legacy=on,disable-modern=off$IOMMU_DEV_EXTRA \
     -device virtio-serial-pci,disable-legacy=on,disable-modern=off$IOMMU_DEV_EXTRA \
     -device virtconsole,chardev=mux \
+    -device ivshmem-plain,memdev=shmem0,id=shmem \
+    -object memory-backend-file,id=shmem0,share=yes,mem-path=/dev/shm/tdx-shmem,prealloc=yes,size=64k \
     $IOMMU_EXTRA_ARGS \
 "
 

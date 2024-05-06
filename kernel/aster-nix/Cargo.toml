@@ -15,6 +15,7 @@ aster-network = { path = "../comps/network" }
 aster-console = { path = "../comps/console" }
 aster-time = { path = "../comps/time" }
 aster-virtio = { path = "../comps/virtio" }
+aster-ivshmem = { path = "../comps/ivshmem" }
 aster-rights = { path = "../libs/aster-rights" }
 controlled = { path = "../libs/comp-sys/controlled" }
 typeflags = { path = "../libs/typeflags" }

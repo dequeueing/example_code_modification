@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: MPL-2.0
 
+pub mod ivshmem;
+
 use log::info;
 
 pub fn init() {
@@ -7,4 +9,5 @@ pub fn init() {
     for (name, _) in aster_input::all_devices() {
         info!("Found Input device, name:{}", name);
     }
+    ivshmem::init()
 }

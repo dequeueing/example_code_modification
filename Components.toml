@@ -8,6 +8,7 @@ console = { name = "aster-console" }
 time = { name = "aster-time" }
 framebuffer = { name = "aster-framebuffer" }
 network = { name = "aster-network" }
+ivshmem = { name = "aster-ivshmem" }
 main = { name = "asterinas" }
 
 [whitelist]

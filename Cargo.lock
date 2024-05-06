@@ -159,6 +159,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "aster-ivshmem"
+version = "0.1.0"
+dependencies = [
+ "aster-frame",
+ "component",
+ "log",
+ "spin 0.9.8",
+]
+
+[[package]]
 name = "aster-main"
 version = "0.1.0"
 dependencies = [
@@ -197,6 +207,7 @@ dependencies = [
  "aster-console",
  "aster-frame",
  "aster-input",
+ "aster-ivshmem",
  "aster-network",
  "aster-rights",
  "aster-rights-proc",

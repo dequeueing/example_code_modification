@@ -99,6 +99,7 @@ OSDK_CRATES := \
 	kernel/comps/input \
 	kernel/comps/network \
 	kernel/comps/time \
+	kernel/comps/ivshmem \
 	kernel/comps/virtio \
 	kernel/libs/aster-util
 
