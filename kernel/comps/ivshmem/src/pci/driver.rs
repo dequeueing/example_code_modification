@@ -28,8 +28,9 @@ impl PciDriver for IvSharedMemoryDriver {
     ) -> Result<Arc<dyn PciDevice>, (BusProbeError, PciCommonDevice)> {
         const IVSHMEM_VENDOR_ID: u16 = 0x1af4;
         const IVSHMEM_DEVICE_ID: u16 = 0x1110;
+        aster_frame::early_println!("device id:{:x?}, vendor id:{:x?}",device.device_id().device_id,device.device_id().vendor_id);
         if device.device_id().vendor_id != IVSHMEM_VENDOR_ID
-            && device.device_id().device_id != IVSHMEM_DEVICE_ID
+            || device.device_id().device_id != IVSHMEM_DEVICE_ID
         {
             return Err((BusProbeError::DeviceNotMatch, device));
         }

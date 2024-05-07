@@ -73,6 +73,7 @@ pub fn init() {
     sched::init();
     fs::rootfs::init(boot::initramfs()).unwrap();
     device::init().unwrap();
+    proxy::init();
     vdso::init();
 }
 

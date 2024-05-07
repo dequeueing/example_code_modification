@@ -8,8 +8,10 @@ use aster_frame::{
         pci::{bus::PciDevice, cfg_space::MemoryBar, common_device::PciCommonDevice, PciDeviceId},
         BusProbeError,
     },
+    early_println,
     vm::VmIo,
 };
+use log::info;
 
 pub struct IvSharedMemoryDevice {
     common_device: PciCommonDevice,
@@ -33,6 +35,11 @@ impl IvSharedMemoryDevice {
                 }
             }
         };
+        early_println!(
+            "Shared memory base:{:x?}, size:{:x?}",
+            shared_memory_bar.base(),
+            shared_memory_bar.size()
+        );
 
         Ok(Self {
             common_device,

@@ -14,7 +14,7 @@ use core::{mem::size_of, sync::atomic::Ordering};
 use crate::{proxy::mc::{MCOpcode, Metadata, MC, META, STATE_INIT}, syscall::SyscallReturn, prelude::*};
 // use crate::utils::error::SyscallReturn; // fixme: wrap the return result of syscall
 
-const BASE_ADDR: usize = 0xFFFFFFC0_40000000;
+const BASE_ADDR: usize = 0x800000000 + 0xffff_8000_0000_0000;
 const SHM_SIZE: usize = 4096 * 64;
 
 /// Sends a message proxying the corresponding syscall to the host.
