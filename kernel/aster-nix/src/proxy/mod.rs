@@ -3,7 +3,7 @@ pub mod mc;
 pub mod net;
 pub mod net_std;
 pub mod path;
-pub mod sm;
+// pub mod sm;
 pub mod socket;
 mod sync;
 mod terminal;
@@ -12,7 +12,7 @@ use core::{mem::size_of, sync::atomic::Ordering};
 
 // use num_traits::cast::FromPrimitive;
 use crate::{proxy::mc::{MCOpcode, Metadata, MC, META, STATE_INIT}, syscall::SyscallReturn, prelude::*};
-// use crate::utils::error::SyscallRet; // fixme: wrap the return result of syscall
+// use crate::utils::error::SyscallReturn; // fixme: wrap the return result of syscall
 
 const BASE_ADDR: usize = 0xFFFFFFC0_40000000;
 const SHM_SIZE: usize = 4096 * 64;
@@ -23,9 +23,9 @@ pub fn proxy_syscall(process_id: usize, syscall_id: usize, args: [u64; 8]) -> Re
     MC::alloc().proxy(process_id, syscall_id, args).free()
 }
 
-pub fn sm_init() {
-    STATE_MACHINE.lock().init();
-}
+// pub fn sm_init() {
+//     STATE_MACHINE.lock().init();
+// }
 
 /// Initialize the shared memory region
 pub fn init() {
@@ -107,4 +107,4 @@ macro_rules! expand_args {
 
 pub(crate) use expand_args;
 
-use self::sm::STATE_MACHINE;
+// use self::sm::STATE_MACHINE;

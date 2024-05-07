@@ -10,6 +10,7 @@ use crate::{
     },
     log_syscall_entry,
     prelude::*,
+    proxy::fs::proxy_sys_openat,
     syscall::constants::MAX_FILENAME_LEN,
     util::read_cstring_from_user,
 };
@@ -27,25 +28,32 @@ pub fn sys_openat(
         dirfd, pathname, flags, mode
     );
 
-    let current = current!();
-    let file_handle = {
-        let pathname = pathname.to_string_lossy();
-        let fs_path = FsPath::new(dirfd, pathname.as_ref())?;
-        let mask_mode = mode & !current.umask().read().get();
-        let inode_handle = current.fs().read().open(&fs_path, flags, mask_mode)?;
-        Arc::new(inode_handle)
-    };
-    let mut file_table = current.file_table().lock();
-    let fd = {
-        let fd_flags =
-            if CreationFlags::from_bits_truncate(flags).contains(CreationFlags::O_CLOEXEC) {
-                FdFlags::CLOEXEC
-            } else {
-                FdFlags::empty()
-            };
-        file_table.insert(file_handle, fd_flags)
-    };
-    Ok(SyscallReturn::Return(fd as _))
+    proxy_sys_openat(
+        dirfd as usize,
+        pathname.to_str().unwrap(),
+        crate::proxy::fs::OpenFlags::from_bits_truncate(flags),
+        mode as usize,
+    )
+
+    // let current = current!();
+    // let file_handle = {
+    //     let pathname = pathname.to_string_lossy();
+    //     let fs_path = FsPath::new(dirfd, pathname.as_ref())?;
+    //     let mask_mode = mode & !current.umask().read().get();
+    //     let inode_handle = current.fs().read().open(&fs_path, flags, mask_mode)?;
+    //     Arc::new(inode_handle)
+    // };
+    // let mut file_table = current.file_table().lock();
+    // let fd = {
+    //     let fd_flags =
+    //         if CreationFlags::from_bits_truncate(flags).contains(CreationFlags::O_CLOEXEC) {
+    //             FdFlags::CLOEXEC
+    //         } else {
+    //             FdFlags::empty()
+    //         };
+    //     file_table.insert(file_handle, fd_flags)
+    // };
+    // Ok(SyscallReturn::Return(fd as _))
 }
 
 pub fn sys_open(pathname_addr: Vaddr, flags: u32, mode: u16) -> Result<SyscallReturn> {
@@ -61,7 +69,6 @@ impl FileLike for BusyBoxTraceFile {
         Ok(buf.len())
     }
 }
-
 
 bitflags! {
     /// Open file flags

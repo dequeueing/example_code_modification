@@ -1,6 +1,6 @@
 use core::time::Duration;
 
-use aster_time::SystemTime;
+use crate::time::SystemTime;
 
 #[derive(Debug)]
 #[repr(C)]
@@ -61,9 +61,10 @@ impl TimeSpec {
         // new a time spec with machine time
         // let current_time = current_time_ms();
         let current_time = SystemTime::now();
+        let duration = current_time.duration_since(&SystemTime::UNIX_EPOCH).unwrap();
         Self {
-            sec: current_time.duration_since(&SystemTime::UNIX_EPOCH)?.as_secs(),
-            nsec: current_time % 1000 * 1000000,
+            sec: duration.as_secs() as usize,
+            nsec: (duration.as_nanos() % 1_000_000_000) as u64 as usize,
         }
     }
 }

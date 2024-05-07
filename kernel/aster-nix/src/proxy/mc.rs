@@ -1,4 +1,7 @@
 use alloc::ffi::CString;
+use aster_frame::io_mem::IoMem;
+use aster_util::safe_ptr::SafePtr;
+use spin::Once;
 use core::{
     mem::size_of,
     sync::atomic::{AtomicU16, AtomicU32, Ordering},
@@ -8,14 +11,16 @@ use core::{
 
 use crate::{
     proxy::{
-        sync::Anp,
+        // sync::Anp,
         terminal::{Node, Terminal},
         BASE_ADDR,
     }, 
     syscall::SyscallReturn,
     prelude::*,
-    // utils::error::{SyscallErr, SyscallRet},
+    // utils::error::{SyscallErr, SyscallReturn},
 };
+
+use super::sync::Anp;
 
 pub type MCState = u32;
 pub type MCOpcode = u32;
@@ -56,6 +61,8 @@ pub(crate) struct Metadata {
 }
 
 pub(crate) static mut META: Anp<Metadata> = Anp::null();
+/// Metadata in memory I/O region
+// pub(crate) static META: Once<SafePtr<IoMem,>> = Anp::null();
 
 impl MC {
     /// Allocates a free MC in the shared memory region. This is guaranteed to be successful
@@ -107,12 +114,13 @@ impl MC {
                 }
             }
         };
+        Ok(SyscallReturn::Return(ret))
 
-        if ret < 0 {
-            Err(Error::from_isize(-ret).unwrap())
-        } else {
-            Ok(ret as usize)
-        }
+        // if ret < 0 {
+        //     Err(Error::from_isize(-ret).unwrap())
+        // } else {
+        //     Ok(SyscallReturn::Return(ret as usize))
+        // }
     }
     /// Dispatch the current MC for it to be discoverable by the host.
     pub fn dispatch(&mut self) {

@@ -220,6 +220,7 @@ macro_rules! define_syscall_nums {
 /// The second param is the function name of syscall handler,
 /// The third is optional, means the args(if parameter number > 0),
 /// The third is optional, means if cpu context is required.
+/// Execution in corresponding syscall rust file
 macro_rules! syscall_handler {
     (0, $fn_name: ident) => { $fn_name() };
     (0, $fn_name: ident, $context: expr) => { $fn_name($context) };

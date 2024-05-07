@@ -2,8 +2,7 @@
 
 use super::SyscallReturn;
 use crate::{
-    fs::file_table::FileDescripter, log_syscall_entry, prelude::*, syscall::SYS_WRITE,
-    util::read_bytes_from_user,
+    fs::file_table::FileDescripter, log_syscall_entry, prelude::*, proxy::fs::proxy_sys_write, syscall::SYS_WRITE, util::read_bytes_from_user
 };
 
 const STDOUT: u64 = 1;
@@ -20,16 +19,20 @@ pub fn sys_write(
         fd, user_buf_ptr, user_buf_len
     );
 
-    let current = current!();
-    let file_table = current.file_table().lock();
-    let file = file_table.get_file(fd)?;
-    if user_buf_len == 0 {
-        return Ok(SyscallReturn::Return(0));
-    }
-
     let mut buffer = vec![0u8; user_buf_len];
     read_bytes_from_user(user_buf_ptr, &mut buffer)?;
-    debug!("write content = {:?}", buffer);
-    let write_len = file.write(&buffer)?;
-    Ok(SyscallReturn::Return(write_len as _))
+    proxy_sys_write(fd as usize, buffer.as_ref())
+
+    // let current = current!();
+    // let file_table = current.file_table().lock();
+    // let file = file_table.get_file(fd)?;
+    // if user_buf_len == 0 {
+    //     return Ok(SyscallReturn::Return(0));
+    // }
+
+    // let mut buffer = vec![0u8; user_buf_len];
+    // read_bytes_from_user(user_buf_ptr, &mut buffer)?;
+    // debug!("write content = {:?}", buffer);
+    // let write_len = file.write(&buffer)?;
+    // Ok(SyscallReturn::Return(write_len as _))
 }

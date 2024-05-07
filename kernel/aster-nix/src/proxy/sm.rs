@@ -15,7 +15,7 @@ use super::{
     socket::{SocketInfo, SocketType, Socketstate, AF_INET},
 };
 use crate::{
-    error::SyscallRet,
+    println, syscall::{fstatat::STAT, SyscallReturn},
 };
 use aster_frame::{console::print, sync::Mutex};
 pub struct SyscallStateMachine {
@@ -171,7 +171,7 @@ impl SyscallStateMachine {
         filename: &str,
         flag: OpenFlags,
         mode: usize,
-        ret: SyscallRet,
+        ret: SyscallReturn,
     ) -> bool {
         match ret {
             Ok(r) => {
@@ -225,7 +225,7 @@ impl SyscallStateMachine {
         return true;
     }
 
-    pub fn post_verify_close(&mut self, fd: usize, ret: SyscallRet) -> bool {
+    pub fn post_verify_close(&mut self, fd: usize, ret: SyscallReturn) -> bool {
         match ret {
             Ok(r) => {
                 if r == 0 {
@@ -262,7 +262,7 @@ impl SyscallStateMachine {
         return true;
     }
 
-    pub fn post_verify_dup(&mut self, ret: SyscallRet) -> bool {
+    pub fn post_verify_dup(&mut self, ret: SyscallReturn) -> bool {
         match ret {
             Ok(r) => {
                 if r as isize == -1 {
@@ -319,7 +319,7 @@ impl SyscallStateMachine {
         }
         return true;
     }
-    pub fn post_verify_unlink(&mut self, path: &str, ret: SyscallRet) -> bool {
+    pub fn post_verify_unlink(&mut self, path: &str, ret: SyscallReturn) -> bool {
         let testpath = [
             "iozone.tmp.DUMMY",
             "iozone.DUMMY.0",
@@ -367,7 +367,7 @@ impl SyscallStateMachine {
         return true;
     }
 
-    pub fn post_verify_mkdir(&mut self, filename: &str, mode: usize, ret: SyscallRet) -> bool {
+    pub fn post_verify_mkdir(&mut self, filename: &str, mode: usize, ret: SyscallReturn) -> bool {
         match ret {
             Ok(r) => {
                 if r == 0 {
@@ -424,7 +424,7 @@ impl SyscallStateMachine {
         fd: usize,
         offset: isize,
         whence: u8,
-        ret: SyscallRet,
+        ret: SyscallReturn,
     ) -> bool {
         match ret {
             Ok(r) => {
@@ -494,7 +494,7 @@ impl SyscallStateMachine {
         return true;
     }
 
-    pub fn post_verify_read(&mut self, fd: usize, len: usize, ret: SyscallRet) -> bool {
+    pub fn post_verify_read(&mut self, fd: usize, len: usize, ret: SyscallReturn) -> bool {
         match ret {
             Ok(r) => {
                 if r as isize == -1 {
@@ -536,7 +536,7 @@ impl SyscallStateMachine {
         fd: usize,
         len: usize,
         offset: usize,
-        ret: SyscallRet,
+        ret: SyscallReturn,
     ) -> bool {
         match ret {
             Ok(r) => {
@@ -573,7 +573,7 @@ impl SyscallStateMachine {
         return true;
     }
 
-    pub fn post_verify_write(&mut self, fd: usize, len: usize, ret: SyscallRet) -> bool {
+    pub fn post_verify_write(&mut self, fd: usize, len: usize, ret: SyscallReturn) -> bool {
         match ret {
             Ok(r) => {
                 if r as isize == -1 {
@@ -614,7 +614,7 @@ impl SyscallStateMachine {
         fd: usize,
         offset: usize,
         len: usize,
-        ret: SyscallRet,
+        ret: SyscallReturn,
     ) -> bool {
         match ret {
             Ok(r) => {
@@ -643,7 +643,7 @@ impl SyscallStateMachine {
         return true;
     }
 
-    pub fn post_verify_ftruncate(&mut self, fd: usize, len: usize, ret: SyscallRet) -> bool {
+    pub fn post_verify_ftruncate(&mut self, fd: usize, len: usize, ret: SyscallReturn) -> bool {
         match ret {
             Ok(r) => {
                 if r as isize == -1 {
@@ -672,7 +672,7 @@ impl SyscallStateMachine {
         return true;
     }
 
-    pub fn post_verify_getdents(&mut self, fd: usize, buf_addr: usize, ret: SyscallRet) -> bool {
+    pub fn post_verify_getdents(&mut self, fd: usize, buf_addr: usize, ret: SyscallReturn) -> bool {
         match ret {
             Ok(r) => {
                 if r as isize == -1 {
@@ -748,7 +748,7 @@ impl SyscallStateMachine {
         return true;
     }
 
-    pub fn post_verify_renameat2(&mut self, oldpath: &str, newpath: &str, ret: SyscallRet) -> bool {
+    pub fn post_verify_renameat2(&mut self, oldpath: &str, newpath: &str, ret: SyscallReturn) -> bool {
         match ret {
             Ok(r) => {
                 if r == 0 {
@@ -786,7 +786,7 @@ impl SyscallStateMachine {
         return true;
     }
 
-    pub fn post_verify_fstatat(&mut self, path: &str, stat_buf: usize, ret: SyscallRet) -> bool {
+    pub fn post_verify_fstatat(&mut self, path: &str, stat_buf: usize, ret: SyscallReturn) -> bool {
         let testpath = [
             "iozone.tmp.DUMMY",
             "iozone.DUMMY.0",
@@ -855,7 +855,7 @@ impl SyscallStateMachine {
         return true;
     }
 
-    pub fn post_verify_fstat(&mut self, fd: usize, stat_buf: usize, ret: SyscallRet) -> bool {
+    pub fn post_verify_fstat(&mut self, fd: usize, stat_buf: usize, ret: SyscallReturn) -> bool {
         match ret {
             Ok(r) => {
                 if r as isize == -1 {
@@ -917,7 +917,7 @@ impl SyscallStateMachine {
         return true;
     }
 
-    pub fn post_verify_faccessat(&mut self, ret: SyscallRet) -> bool {
+    pub fn post_verify_faccessat(&mut self, ret: SyscallReturn) -> bool {
         match ret {
             Ok(r) => {
                 if r == 0 {
@@ -940,7 +940,7 @@ impl SyscallStateMachine {
         return true;
     }
 
-    pub fn post_verify_readlinkat(&mut self, _buf: usize, ret: SyscallRet) -> bool {
+    pub fn post_verify_readlinkat(&mut self, _buf: usize, ret: SyscallReturn) -> bool {
         match ret {
             Ok(r) => {
                 if r as isize == -1 {
@@ -991,7 +991,7 @@ impl SyscallStateMachine {
         return true;
     }
 
-    pub fn post_verify_socket(&mut self, ret: SyscallRet, domain: u32, socket_type: u32) -> bool {
+    pub fn post_verify_socket(&mut self, ret: SyscallReturn, domain: u32, socket_type: u32) -> bool {
         match ret {
             Ok(r) => {
                 if r as isize == -1 {
@@ -1041,7 +1041,7 @@ impl SyscallStateMachine {
         return true;
     }
 
-    pub fn post_verify_bind(&mut self, ret: SyscallRet, sockfd: u32, addr: &[u8]) -> bool {
+    pub fn post_verify_bind(&mut self, ret: SyscallReturn, sockfd: u32, addr: &[u8]) -> bool {
         match ret {
             Ok(r) => {
                 if r == 0 {
@@ -1091,7 +1091,7 @@ impl SyscallStateMachine {
         return true;
     }
 
-    pub fn post_verify_listen(&mut self, ret: SyscallRet, sockfd: u32, backlog: u32) -> bool {
+    pub fn post_verify_listen(&mut self, ret: SyscallReturn, sockfd: u32, backlog: u32) -> bool {
         match ret {
             Ok(r) => {
                 if r == 0 {
@@ -1135,7 +1135,7 @@ impl SyscallStateMachine {
         return true;
     }
 
-    pub fn post_verify_accept(&mut self, ret: SyscallRet, sockfd: u32, addr: &mut [u8]) -> bool {
+    pub fn post_verify_accept(&mut self, ret: SyscallReturn, sockfd: u32, addr: &mut [u8]) -> bool {
         match ret {
             Ok(r) => {
                 if r as isize == -1 {
@@ -1202,7 +1202,7 @@ impl SyscallStateMachine {
         return true;
     }
 
-    pub fn post_verify_connect(&mut self, ret: SyscallRet, sockfd: u32, _addr: &[u8]) -> bool {
+    pub fn post_verify_connect(&mut self, ret: SyscallReturn, sockfd: u32, _addr: &[u8]) -> bool {
         match ret {
             Ok(r) => {
                 if r == 0 {
@@ -1231,7 +1231,7 @@ impl SyscallStateMachine {
 
     pub fn post_verify_getsockname(
         &mut self,
-        ret: SyscallRet,
+        ret: SyscallReturn,
         sockfd: u32,
         addr: &mut [u8],
     ) -> bool {
@@ -1288,7 +1288,7 @@ impl SyscallStateMachine {
 
     pub fn post_verify_getpeername(
         &mut self,
-        ret: SyscallRet,
+        ret: SyscallReturn,
         sockfd: u32,
         addr: &mut [u8],
     ) -> bool {
@@ -1336,7 +1336,7 @@ impl SyscallStateMachine {
         return true;
     }
 
-    pub fn post_verify_sendto(&mut self, ret: SyscallRet, _sockfd: u32, len: usize) -> bool {
+    pub fn post_verify_sendto(&mut self, ret: SyscallReturn, _sockfd: u32, len: usize) -> bool {
         match ret {
             Ok(r) => {
                 if r as isize == -1 {
@@ -1362,7 +1362,7 @@ impl SyscallStateMachine {
         return true;
     }
 
-    pub fn post_verify_recvfrom(&mut self, ret: SyscallRet, _sockfd: u32, len: usize) -> bool {
+    pub fn post_verify_recvfrom(&mut self, ret: SyscallReturn, _sockfd: u32, len: usize) -> bool {
         match ret {
             Ok(r) => {
                 if r as isize == -1 {
@@ -1388,7 +1388,7 @@ impl SyscallStateMachine {
         return true;
     }
 
-    pub fn post_verify_setsockopt(&mut self, ret: SyscallRet, sockfd: u32) -> bool {
+    pub fn post_verify_setsockopt(&mut self, ret: SyscallReturn, sockfd: u32) -> bool {
         match ret {
             Ok(r) => {
                 if r as isize == -1 {
@@ -1416,7 +1416,7 @@ impl SyscallStateMachine {
         return true;
     }
 
-    pub fn post_verify_shutdown(&mut self, ret: SyscallRet, sockfd: u32, _how: u32) -> bool {
+    pub fn post_verify_shutdown(&mut self, ret: SyscallReturn, sockfd: u32, _how: u32) -> bool {
         match ret {
             Ok(r) => {
                 if r == 0 {
@@ -1459,7 +1459,7 @@ impl SyscallStateMachine {
 
     pub fn post_verify_socketpair(
         &mut self,
-        ret: SyscallRet,
+        ret: SyscallReturn,
         domain: u32,
         socket_type: u32,
         sv: &mut [usize],

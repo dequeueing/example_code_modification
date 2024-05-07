@@ -1,7 +1,9 @@
-use crate::proxy::sync::Anp;
+
 use crate::proxy::BASE_ADDR;
 use core::fmt;
 use core::fmt::Formatter;
+
+use super::sync::Anp;
 
 #[derive(Debug)]
 #[repr(C)]
@@ -35,11 +37,11 @@ impl Terminal {
     pub unsafe fn enqueue(&mut self, mut node: Anp<Node>) {
         let mut tail: Anp<Node> = Anp::null();
         let mut next: usize;
-        node.as_mut().unwrap().next.raw = 0;
+        node.as_mut().next.raw = 0;
 
         'enqueue: loop {
             tail.raw = self.tail.raw + BASE_ADDR;
-            next = tail.as_ref().unwrap().next.raw;
+            next = tail.as_ref().next.raw;
 
             if tail.raw - BASE_ADDR != self.tail.raw {
                 continue;

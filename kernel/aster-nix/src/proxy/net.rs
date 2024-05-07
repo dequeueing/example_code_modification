@@ -5,7 +5,7 @@ use crate::proxy::expand_args;
 use crate::proxy::mc::MC;
 use crate::syscall::SyscallReturn;
 use crate::prelude::*;
-// use crate::error::SyscallRet;
+// use crate::error::SyscallReturn;
 
 
 pub fn proxy_sys_socket(domain: u32, socket_type: u32, protocol: u32) -> Result<SyscallReturn> {
